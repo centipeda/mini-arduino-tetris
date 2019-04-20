@@ -1,0 +1,15 @@
+#include "pitches.h"
+/* Merry Christmas, Mr. Lawrence. Because I feel like crying. */
+const float song[] PROGMEM {
+  NOTE_F5, 8, NOTE_DS5, 8, NOTE_F5, 8, NOTE_AS5, 8, NOTE_F5, 8, NOTE_DS5, 8, 
+  NOTE_F5, 8, NOTE_DS5, 8, NOTE_F5, 8, NOTE_AS5, 8, NOTE_F5, 8, NOTE_DS5, 8, 
+  NOTE_F5, 8, NOTE_DS5, 8, NOTE_F5, 8, NOTE_GS5, 8, NOTE_F5, 8, NOTE_DS5, 8, 
+  NOTE_F5, 8, NOTE_DS5, 8, NOTE_F5, 8, NOTE_GS5, 8, NOTE_F5, 8, NOTE_DS5, 8, 
+  NOTE_DS5, 8, NOTE_CS5, 8, NOTE_DS5, 8, NOTE_GS5, 8, NOTE_DS5, 8, NOTE_CS5, 8, 
+  NOTE_DS5, 8, NOTE_CS5, 8, NOTE_DS5, 8, NOTE_GS5, 8, NOTE_DS5, 8, NOTE_CS5, 8,
+  NOTE_DS5, 8, NOTE_CS5, 8, NOTE_DS5, 8, NOTE_GS5, 8, NOTE_DS5, 8, NOTE_CS5, 8,
+  NOTE_C5, 8, NOTE_GS4, 8, NOTE_C5, 8, NOTE_F5, 8, NOTE_C5, 8, NOTE_GS4, 8 
+};
+
+#define NOTES 48
+#define BPM 30.0
