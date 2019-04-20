@@ -1,24 +1,13 @@
+
 #include <Wire.h>
 #include <Adafruit_GFX.h>
 #include "Adafruit_LEDBackpack.h"
 #include <EnableInterrupt.h>
 
-// music stuff
-#include "a_theme.h" // include the song
-#define SPEAKER_PIN 12
-
-
-float fullBeat = (1 / BPM) * 60 * 1000; // full length of a beat in milliseconds
-int cNote = 0;
-int noteLength = 0;
-int noteTime = 0;
-int freq;
-// end music stuff
-
 bool shouldBreak;
 Adafruit_8x16matrix matrix = Adafruit_8x16matrix();
 int gameBoard[8][16]={0};
-const int pauseLength = 100;
+const int pauseLength = 150;
 
 #define LEFT_PIN 8
 #define RIGHT_PIN  9
@@ -37,76 +26,33 @@ int x = 4;
 
 void setup() {
   Serial.begin(9600);
-  randomSeed(analogRead(A0));
   matrix.setBrightness(15);
   matrix.begin(0x70);  // pass in the address
   enableInterrupt(LEFT_PIN, leftButtonClicked, RISING);
   enableInterrupt(RIGHT_PIN, rightButtonClicked, RISING);
   enableInterrupt(ROTATE_PIN, rotateButtonClicked, RISING);
   enableInterrupt(DROP_PIN, dropButtonClicked, RISING);
-
-  // for testing
-  /*
-  gameBoard[0][15] = 1;
-  gameBoard[1][15] = 1;
-  gameBoard[2][15] = 1;
-  gameBoard[3][15] = 1;
-  gameBoard[4][15] = 1;
-  gameBoard[6][15] = 1;
-  gameBoard[7][15] = 1;
-  */
 }
 
 static const uint8_t PROGMEM;
   
 void loop() {
 
-  clearRows();
-
   dropPiece();
   
   matrix.setRotation(0);
-
-  // playMusic();
-
-  endGame();
+  
 }
-
-void clearRows() {
-  bool cleared = true;
-  int rowsCleared = 0;
-  for(int jj = 0; jj <= 15; jj++)  {
-    for(int r = 0; r <= 7; r++) {
-      if(gameBoard[r][jj] == 0) {
-        cleared = false;
-      }
-    }
-    if(cleared) {
-      for(int i = 0; i <= 7; i++) {
-        gameBoard[i][jj] = 0;
-        
-        for(int n = jj; n > 1; n--) {
-          gameBoard[i][n] = gameBoard[i][n - 1];
-        }
-        gameBoard[i][0] = 0;
-        
-      }
-    } else {
-      cleared = true; 
-    }
-  }
-}
-
 
 void dropPiece() {
   x=4;
   shouldBreak = false;
+  randomSeed(analogRead(A0));
   int pieceSelection = random(5);
   Serial.println(pieceSelection);
   
   for(int c = 0; c <= 15; c++) {
-    playMusic();
-    matrix.clear();
+  matrix.clear();
     
     for(int i = 0; i < 16; i++) {
       for(int j = 0; j < 8; j++) {
@@ -127,12 +73,9 @@ void dropPiece() {
       x -= 1;
      
     }
-    else if(rightPressed && x < 8 - pieceWidth) {
+    else if(rightPressed && x < 8-pieceWidth) {
       x += 1;
       
-    } 
-    else if(dropPressed) {
-      // fill in drop code here (?)
     }
       switch(pieceSelection) {
         case 0 :
@@ -164,20 +107,6 @@ void dropPiece() {
     }
   }   
 
-void endGame() {
-  bool finished = false;
-  for(int t = 0; t <= 7; t++) {
-    if(gameBoard[t][0] == 1)
-      finished = true;
-  }
-  if(finished) {
-    for(int a = 0; a <= 7; a++) {
-      for(int b = 0; b <= 15; b++) {
-        gameBoard[a][b] = 0;
-      }
-    }
-  }
-}
 
 void drawElbow(int c) {
   
@@ -374,26 +303,4 @@ void rotateButtonClicked() {
 
 void dropButtonClicked() {
   dropPressed = true;
-}
-
-void playMusic() {
-   // for playing the song
-  if((millis() - noteTime) > noteLength) {
-    noteTime = millis();
-    noteLength = fullBeat / pgm_read_float_near(song + cNote + 1); // song[cNote + 1];
-    freq = pgm_read_float(song + cNote);
-    noTone(SPEAKER_PIN);
-    delay(5);
-    if (pgm_read_float(song + cNote) != 0) {
-      tone(SPEAKER_PIN, freq); // song[cNote]);
-    }
-    cNote += 2;
-  } else {
-    noteTime--;
-    // delay(1);
-  }
-  if (cNote >= NOTES * 2 + 2) {
-    cNote = 0;
-    noteTime = 0;
-  }
 }
