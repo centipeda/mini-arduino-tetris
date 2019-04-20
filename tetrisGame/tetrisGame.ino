@@ -15,23 +15,27 @@ long long noteTime = 0;
 int freq;
 // end music stuff
 
+
 bool shouldBreak;
 Adafruit_8x16matrix matrix = Adafruit_8x16matrix();
 int gameBoard[8][16]={0};
-const int pauseLength = 100;
+int pauseLength = 100;
+int rotateForm = 0;
 
 #define LEFT_PIN 8
 #define RIGHT_PIN  9
 #define ROTATE_PIN 10
 #define DROP_PIN 11 
 
-volatile bool leftPressed = false;  
+volatile bool leftPressed = false;
 volatile bool rightPressed = false;
 volatile bool rotatePressed = false;
 volatile bool dropPressed = false;
 
 int pieceWidth = 0;
 int x = 4;
+int reallyFinished = 0;
+bool decrementCounter;
 
 
 
@@ -60,6 +64,8 @@ void setup() {
 static const uint8_t PROGMEM;
   
 void loop() {
+  
+  pauseLength = 100;
 
   clearRows();
 
@@ -67,7 +73,7 @@ void loop() {
   
   matrix.setRotation(0);
 
-  playMusic();
+  // playMusic();
 
   endGame();
 }
@@ -102,9 +108,10 @@ void dropPiece() {
   x=4;
   shouldBreak = false;
   int pieceSelection = random(5);
-  Serial.println(pieceSelection);
-  
-  for(int c = 0; c <= 15; c++) {
+  rotateForm = 0;
+  int c;
+  for(c = 0; c <= 15; c++) {
+    decrementCounter = false;
     playMusic();
     matrix.clear();
     
@@ -119,6 +126,11 @@ void dropPiece() {
     
     if(shouldBreak) {
       break;
+    }
+
+    if(dropPressed) {
+      pauseLength = 0;
+      dropPressed = false;
     }
 
       
@@ -156,7 +168,9 @@ void dropPiece() {
           pieceWidth = 2;
           break;
       }
-      
+      if(decrementCounter) {
+        c -= 1;
+      }
       
       
       
@@ -180,22 +194,56 @@ void endGame() {
 }
 
 void drawElbow(int c) {
-  
+
+  if(rotatePressed) {
+     if(rotateForm == 0 && (gameBoard[x+1][c] == 0 && gameBoard[x][c+1] == 0)) {
+        rotateForm += 1;
+        rotatePressed = false;
+     }
+     else if(rotateForm == 1 && (gameBoard[x][c] == 0 && gameBoard[x][c+1] == 0 && gameBoard[x+1][c+1] == 0)) {
+        rotateForm += 1;
+        rotatePressed = false;
+     }
+     else if(rotateForm == 2 && (gameBoard[x][c+1] == 0 && gameBoard[x-1][c+1] == 0)) {
+        rotateForm += 1;
+        rotatePressed = false;
+     }
+     else if(rotateForm == 3 && (gameBoard[x+1][c] == 0 && gameBoard[x+1][c+1] == 0)) {
+        rotateForm += 1;
+        rotatePressed = false;
+     }
+     else {
+        rotatePressed = false;
+     }
+  }
+  if(rotateForm == 4) {
+    rotateForm = 0;
+  }
+
+  if(rotateForm == 0) {
     matrix.drawPixel(x, c, LED_ON);
     matrix.drawPixel(x+1, c, LED_ON);
     matrix.drawPixel(x+1, c+1, LED_ON);
     matrix.writeDisplay();
     rightPressed = false;
       leftPressed = false;
-      rotatePressed = false;
       delay(pauseLength);
     if(c >= 14) {
       shouldBreak = true;
       placeElbow(c);
     }
     else if(gameBoard[x][c+1] != 0 || gameBoard[x+1][c+2] != 0){
-    shouldBreak = true;
-    placeElbow(c);
+      if(reallyFinished == 3) {
+      shouldBreak = true;
+      reallyFinished = 0;
+      placeElbow(c);
+      }
+      
+      else if(reallyFinished < 3) {
+        reallyFinished += 1;
+        decrementCounter = true;
+      }
+    
   }
     if((gameBoard[x-1][c] != 0 || gameBoard[x][c+1] != 0 || gameBoard[x][c+2] != 0 || gameBoard[x-1][c+1] != 0) && leftPressed) {
       x = x+1;
@@ -203,53 +251,264 @@ void drawElbow(int c) {
     if((gameBoard[x+2][c] != 0 || gameBoard[x+2][c+1] != 0 || gameBoard[x+2][c+2] != 0) && rightPressed) {
       x = x-1;
     }
-
+  }
+  else if(rotateForm == 1) {
+    matrix.drawPixel(x, c, LED_ON);
+    matrix.drawPixel(x+1, c, LED_ON);
+    matrix.drawPixel(x, c+1, LED_ON);
+    matrix.writeDisplay();
+    rightPressed = false;
+    leftPressed = false;
+      
+      delay(pauseLength);
+    if(c >= 14) {
+      shouldBreak = true;
+      placeElbow(c);
+    }
+    else if(gameBoard[x][c+2] != 0 || gameBoard[x+1][c+1] != 0){
+      if(reallyFinished == 3) {
+      shouldBreak = true;
+      reallyFinished = 0;
+      placeElbow(c);
+      }
+      
+      else if(reallyFinished < 3) {
+        reallyFinished += 1;
+        decrementCounter = true;
+      }
+    
+  }
+    if((gameBoard[x-1][c] != 0 || gameBoard[x-1][c+1] != 0 || gameBoard[x-1][c+2] != 0) && leftPressed) {
+      x = x+1;
+    }
+    if((gameBoard[x+2][c] != 0 || gameBoard[x+2][c+1] != 0 || gameBoard[x+1][c+1] != 0 || gameBoard[x+1][c+2] != 0) && rightPressed) {
+      x = x-1;
+    }
+  }
+  else if(rotateForm == 2) {
+    matrix.drawPixel(x, c, LED_ON);
+    matrix.drawPixel(x, c+1, LED_ON);
+    matrix.drawPixel(x+1, c+1, LED_ON);
+    matrix.writeDisplay();
+    rightPressed = false;
+    leftPressed = false;
+      
+      delay(pauseLength);
+    if(c >= 14) {
+      shouldBreak = true;
+      placeElbow(c);
+    }
+    else if(gameBoard[x][c+2] != 0 || gameBoard[x+1][c+2] != 0){
+      if(reallyFinished == 3) {
+      shouldBreak = true;
+      reallyFinished = 0;
+      placeElbow(c);
+      }
+      
+      else if(reallyFinished < 3) {
+        reallyFinished += 1;
+        decrementCounter = true;
+      }
+    
+  }
+    if((gameBoard[x-1][c] != 0 || gameBoard[x-1][c+1] != 0 || gameBoard[x-1][c+2] != 0) && leftPressed) {
+      x = x+1;
+    }
+    if((gameBoard[x+1][c] != 0 || gameBoard[x+2][c+1] != 0 || gameBoard[x+2][c+2] != 0) && rightPressed) {
+      x = x-1;
+    }
+  }
+  else if(rotateForm == 3) {
+    matrix.drawPixel(x, c, LED_ON);
+    matrix.drawPixel(x, c+1, LED_ON);
+    matrix.drawPixel(x-1, c+1, LED_ON);
+    matrix.writeDisplay();
+    rightPressed = false;
+    leftPressed = false;
+    delay(pauseLength);
+    if(c >= 14) {
+      shouldBreak = true;
+      placeElbow(c);
+    }
+    else if(gameBoard[x][c+2] != 0 || gameBoard[x-1][c+2] != 0){
+      if(reallyFinished == 3) {
+      shouldBreak = true;
+      reallyFinished = 0;
+      placeElbow(c);
+      }
+      
+      else if(reallyFinished < 3) {
+        reallyFinished += 1;
+        decrementCounter = true;
+      }
+    
+  }
+    if((gameBoard[x-1][c] != 0 || gameBoard[x-2][c+1] != 0 || gameBoard[x-2][c+2] != 0) && leftPressed) {
+      x = x+1;
+    }
+    if((gameBoard[x+1][c] != 0 || gameBoard[x+1][c+1] != 0 || gameBoard[x+1][c+2] != 0) && rightPressed) {
+      x = x-1;
+    }
+  }
   
 }
 
 void placeElbow(int c) {
-  gameBoard[x][c] = 1;
-  gameBoard[x+1][c] = 1;
-  gameBoard[x+1][c+1] = 1;
+  if(rotateForm == 0) {
+    gameBoard[x][c] = 1;
+    gameBoard[x+1][c] = 1;
+    gameBoard[x+1][c+1] = 1;
+  }
+  else if(rotateForm == 1) {
+    gameBoard[x][c] = 1;
+    gameBoard[x+1][c] = 1;
+    gameBoard[x][c+1] = 1;
+  }
+  else if(rotateForm == 2) {
+    gameBoard[x][c] = 1;
+    gameBoard[x][c+1] = 1;
+    gameBoard[x+1][c+1] = 1;
+  }
+  else if(rotateForm == 3) {
+    gameBoard[x][c] = 1;
+    gameBoard[x][c+1] = 1;
+    gameBoard[x-1][c+1] = 1;
+  }
 
 }
 
 void drawStraight(int c) {
-  
+
+    if(rotatePressed) {
+        if(rotateForm == 0 && (gameBoard[x][c+1] == 0 && gameBoard[x][c+2] == 0)) {
+        rotateForm += 1;
+        rotatePressed = false;
+        }
+        else if (rotateForm == 1) {
+          rotateForm += 1;
+          rotatePressed = false;
+        }
+        else {
+          rotatePressed = false;
+        }
+      
+    }
+
+    if(rotateForm == 2) {
+      rotateForm = 0;
+    }
+
+  if(rotateForm == 0) {
     matrix.drawPixel(x, c, LED_ON);
     matrix.drawPixel(x+1, c, LED_ON);
     matrix.drawPixel(x+2, c, LED_ON);
     matrix.writeDisplay();
     rightPressed = false;
-      leftPressed = false;
-      rotatePressed = false;
+    leftPressed = false;
+
       delay(pauseLength);
     if(c == 15) {
       shouldBreak = true;
       placeStraight(c);
     }
     else if(gameBoard[x][c+1] != 0 || gameBoard[x+1][c+1] != 0 || gameBoard[x+2][c+1] != 0) {
-     shouldBreak = true;
-     placeStraight(c);
-  }
+    
+       if(reallyFinished == 3) {
+        shouldBreak = true;
+        reallyFinished = 0;
+        placeStraight(c);
+        }
+        
+        else if(reallyFinished < 3) {
+          reallyFinished += 1;
+          decrementCounter = true;
+        }
+    }
     if((gameBoard[x-1][c] != 0 || gameBoard[x-1][c+1] != 0) && leftPressed) {
       x = x+1;
     }
     if((gameBoard[x+3][c]!=0 || gameBoard[x+3][c+1] !=0) && rightPressed) {
       x = x-1;
     }
-
+  }
+  else if(rotateForm == 1) {
+    matrix.drawPixel(x, c, LED_ON);
+    matrix.drawPixel(x, c+1, LED_ON);
+    matrix.drawPixel(x, c+2, LED_ON);
+    matrix.writeDisplay();
+    rightPressed = false;
+      leftPressed = false;
+      delay(pauseLength);
+    if(c >= 13) {
+      shouldBreak = true;
+      placeStraight(c);
+    }
+    else if(gameBoard[x][c+3] != 0) {
+    
+     if(reallyFinished == 3) {
+      shouldBreak = true;
+      reallyFinished = 0;
+      placeStraight(c);
+      }
+      
+      else if(reallyFinished < 3) {
+        reallyFinished += 1;
+        decrementCounter = true;
+      }
+  }
+    if((gameBoard[x-1][c] != 0 || gameBoard[x-1][c+1] != 0 || gameBoard[x-1][c+2] != 0 || gameBoard[x-1][c+3] != 0) && leftPressed) {
+      x = x+1;
+    }
+    if((gameBoard[x+1][c]!=0 || gameBoard[x+1][c+1] !=0 || gameBoard[x+1][c+2] != 0 || gameBoard[x+1][c+3] != 0) && rightPressed) {
+      x = x-1;
+    }
+  }
   
   
 }
 
 void placeStraight(int c) {
-  gameBoard[x][c] = 1;
-  gameBoard[x+1][c] = 1;
-  gameBoard[x+2][c] = 1;
+  if(rotateForm == 0) {
+    gameBoard[x][c] = 1;
+    gameBoard[x+1][c] = 1;
+    gameBoard[x+2][c] = 1;
+  }
+  else if(rotateForm == 1) {
+    gameBoard[x][c] = 1;
+    gameBoard[x][c+1] = 1;
+    gameBoard[x][c+2] = 1;
+  }
+  
 }
 
 void drawT(int c) {
+
+  if(rotatePressed) {
+    if(rotateForm == 0 && (gameBoard[x][c] == 0 && gameBoard[x][c+1] == 0 && gameBoard[x][c+2] == 0 && gameBoard[x+1][c+1] == 0)) {
+      rotateForm += 1;
+      rotatePressed = false;
+    }
+    else if(rotateForm == 1 && (gameBoard[x-1][c+1] == 0)) {
+      rotateForm += 1;
+      rotatePressed = false;
+    }
+    else if(rotateForm == 2 && (gameBoard[x-1][c+1] == 0 && gameBoard[x][c+1] == 0 && gameBoard[x][c+2] == 0)) {
+      rotateForm += 1;
+      rotatePressed = false;
+    }
+    else if(rotateForm == 3 && (gameBoard[x+1][c] == 0 && gameBoard[x+2][c] == 0 && gameBoard[x+1][c+1] == 0)) {
+      rotateForm += 1;
+      rotatePressed == false;
+    }
+    else {
+      rotatePressed = false;
+    }
+  }
+
+  if(rotateForm == 4) {
+    rotateForm = 0;
+  }
+  if(rotateForm == 0) {
     matrix.drawPixel(x, c, LED_ON);
     matrix.drawPixel(x+1, c, LED_ON);
     matrix.drawPixel(x+2, c, LED_ON);
@@ -257,15 +516,22 @@ void drawT(int c) {
     matrix.writeDisplay();
     rightPressed = false;
     leftPressed = false;
-    rotatePressed = false;
     delay(pauseLength);
   if(c >= 14) {
       placeT(c);
       shouldBreak = true;
   }
   else if(gameBoard[x][c+1] != 0 || gameBoard[x+1][c+2] != 0 || gameBoard[x+2][c+1] != 0){
-    shouldBreak = true;
-    placeT(c);
+    if(reallyFinished == 3) {
+      shouldBreak = true;
+      reallyFinished = 0;
+      placeT(c);
+      }
+      
+      else if(reallyFinished < 3) {
+        reallyFinished += 1;
+        decrementCounter = true;
+      }
   }
   if((gameBoard[x-1][c] != 0 || gameBoard[x][c+1] != 0 || gameBoard[x-1][c+1] != 0 || gameBoard[x][c+2] != 0) && leftPressed) {
     x = x+1;
@@ -273,14 +539,131 @@ void drawT(int c) {
   if((gameBoard[x+3][c] != 0 || gameBoard[x+2][c+1] != 0 || gameBoard[x+3][c+1] != 0 || gameBoard[x+2][c+2] != 0) && rightPressed) {
     x = x-1;
   }  
+  }
+  if(rotateForm == 1) {
+      matrix.drawPixel(x, c, LED_ON);
+      matrix.drawPixel(x, c+1, LED_ON);
+      matrix.drawPixel(x+1, c+1, LED_ON);
+      matrix.drawPixel(x, c+2, LED_ON);
+      matrix.writeDisplay();
+      rightPressed = false;
+      leftPressed = false;
+      delay(pauseLength);
+    if(c >= 13) {
+        placeT(c);
+        shouldBreak = true;
+    }
+    else if(gameBoard[x][c+3] != 0 || gameBoard[x+1][c+2] != 0){
+      if(reallyFinished == 3) {
+        shouldBreak = true;
+        reallyFinished = 0;
+        placeT(c);
+        }
+        
+        else if(reallyFinished < 3) {
+          reallyFinished += 1;
+          decrementCounter = true;
+        }
+    }
+    if((gameBoard[x-1][c] != 0 || gameBoard[x-1][c+1] != 0 || gameBoard[x-1][c+2] != 0 || gameBoard[x-1][c+3] != 0) && leftPressed) {
+      x = x+1;
+    }
+    if((gameBoard[x+1][c] != 0 || gameBoard[x+2][c+1] != 0 || gameBoard[x+1][c+2] != 0 || gameBoard[x+1][c+3] != 0) && rightPressed) {
+      x = x-1;
+    }  
+  }
+  else if(rotateForm == 2) {
+      matrix.drawPixel(x, c, LED_ON);
+      matrix.drawPixel(x, c+1, LED_ON);
+      matrix.drawPixel(x+1, c+1, LED_ON);
+      matrix.drawPixel(x-1, c+1, LED_ON);
+      matrix.writeDisplay();
+      rightPressed = false;
+      leftPressed = false;
+      delay(pauseLength);
+    if(c >= 14) {
+        placeT(c);
+        shouldBreak = true;
+    }
+    else if(gameBoard[x][c+2] != 0 || gameBoard[x+1][c+2] != 0 || gameBoard[x-1][c+2] != 0){
+      if(reallyFinished == 3) {
+        shouldBreak = true;
+        reallyFinished = 0;
+        placeT(c);
+        }
+        
+        else if(reallyFinished < 3) {
+          reallyFinished += 1;
+          decrementCounter = true;
+        }
+    }
+    if((gameBoard[x-1][c] != 0 || gameBoard[x-2][c+1] != 0 || gameBoard[x-2][c+2] != 0) && leftPressed) {
+      x = x+1;
+    }
+    if((gameBoard[x+1][c] != 0 || gameBoard[x+2][c+1] != 0 || gameBoard[x+2][c+2] != 0) && rightPressed) {
+      x = x-1;
+    }  
+  }
+  else if(rotateForm == 3) {
+      matrix.drawPixel(x, c, LED_ON);
+      matrix.drawPixel(x, c+1, LED_ON);
+      matrix.drawPixel(x-1, c+1, LED_ON);
+      matrix.drawPixel(x, c+2, LED_ON);
+      matrix.writeDisplay();
+      rightPressed = false;
+      leftPressed = false;
+      delay(pauseLength);
+    if(c >= 13) {
+        placeT(c);
+        shouldBreak = true;
+    }
+    else if(gameBoard[x][c+3] != 0 || gameBoard[x-1][c+2] != 0){
+      if(reallyFinished == 3) {
+        shouldBreak = true;
+        reallyFinished = 0;
+        placeT(c);
+        }
+        
+        else if(reallyFinished < 3) {
+          reallyFinished += 1;
+          decrementCounter = true;
+        }
+    }
+    if((gameBoard[x-1][c] != 0 || gameBoard[x-2][c+1] != 0 || gameBoard[x-1][c+2] != 0 || gameBoard[x-1][c+3] != 0) && leftPressed) {
+      x = x+1;
+    }
+    if((gameBoard[x+1][c] != 0 || gameBoard[x+1][c+1] != 0 || gameBoard[x+1][c+2] != 0 || gameBoard[x+1][c+3] != 0) && rightPressed) {
+      x = x-1;
+    }  
+  }
 }
 
 void placeT(int c) {
 
-  gameBoard[x][c] = 1;
-  gameBoard[x+1][c] = 1;
-  gameBoard[x+2][c] = 1;
-  gameBoard[x+1][c+1] = 1;
+  if(rotateForm == 0) {
+    gameBoard[x][c] = 1;
+    gameBoard[x+1][c] = 1;
+    gameBoard[x+2][c] = 1;
+    gameBoard[x+1][c+1] = 1;
+  }
+  else if(rotateForm == 1) {
+   gameBoard[x][c] = 1;
+   gameBoard[x][c+1] = 1;
+   gameBoard[x+1][c+1] = 1;
+   gameBoard[x][c+2] = 1;
+  }
+  else if(rotateForm == 2) {
+    gameBoard[x][c] = 1;
+    gameBoard[x][c+1] = 1;
+    gameBoard[x-1][c+1] = 1;
+    gameBoard[x+1][c+1] = 1;
+  }
+  else if(rotateForm == 3) {
+    gameBoard[x][c] = 1;
+    gameBoard[x][c+1] = 1;
+    gameBoard[x-1][c+1] = 1;
+    gameBoard[x][c+2] = 1;
+  }
 }
 
 void drawBlock(int c) {
@@ -291,16 +674,23 @@ void drawBlock(int c) {
     matrix.drawPixel(x+1, c+1, LED_ON);
     matrix.writeDisplay();
     rightPressed = false;
-      leftPressed = false;
-      rotatePressed = false;
+    leftPressed = false;
       delay(pauseLength);
     if(c == 15 || c+1 == 15) {
         shouldBreak = true;
         placeBlock(c);
     }
     else if(gameBoard[x][c+2] != 0 || gameBoard[x+1][c+2] != 0){
-    shouldBreak = true;
-    placeBlock(c);
+    if(reallyFinished == 3) {
+      shouldBreak = true;
+      reallyFinished = 0;
+      placeBlock(c);
+      }
+      
+      else if(reallyFinished < 3) {
+        reallyFinished += 1;
+        decrementCounter = true;
+      }
     
   }
     if((gameBoard[x-1][c] != 0 || gameBoard[x-1][c+1] != 0 || gameBoard[x-1][c+2] != 0) && leftPressed) {
@@ -323,6 +713,24 @@ void drawBlock(int c) {
 
 void drawS(int c) {
   
+  if(rotatePressed) {
+  if(rotateForm == 0 && (gameBoard[x+1][c] == 0 && gameBoard[x+2][c+1] == 0))
+    rotateForm += 1;
+    rotatePressed = false;
+  }
+  else if(rotateForm == 1 && (gameBoard[x][c] == 0 && gameBoard[x][c+1] == 0 && gameBoard[x+1][c+1] == 0 && gameBoard[x+1][c+2] == 0)) {
+    rotateForm += 1;
+    rotatePressed = false;
+  }
+  else {
+    rotatePressed = false;
+  }
+
+  if(rotateForm == 2) {
+    rotateForm = 0;
+  }
+
+  if(rotateForm == 0) {
     matrix.drawPixel(x, c, LED_ON);
     matrix.drawPixel(x, c+1, LED_ON);
     matrix.drawPixel(x+1, c+1, LED_ON);
@@ -330,16 +738,23 @@ void drawS(int c) {
     matrix.writeDisplay();
     rightPressed = false;
       leftPressed = false;
-      rotatePressed = false;
       delay(pauseLength);
-    
+ 
     if(c == 15 || c+1 == 15 || c+2 == 15) {
        shouldBreak = true;
        placeS(c);
     }
     else if(gameBoard[x][c+2] != 0 || gameBoard[x+1][c+3] != 0){
-    placeS(c);
-    shouldBreak = true;
+    if(reallyFinished == 3) {
+      shouldBreak = true;
+      reallyFinished = 0;
+      placeS(c);
+      }
+      
+      else if(reallyFinished < 3) {
+        reallyFinished += 1;
+        decrementCounter = true;
+      }
   }
     if((gameBoard[x-1][c] != 0 || gameBoard[x-1][c+1] != 0 || gameBoard[x-1][c+2] != 0 || gameBoard[x][c+2] != 0 || gameBoard[x][c+3] != 0) && leftPressed) {
       x = x+1;
@@ -347,16 +762,55 @@ void drawS(int c) {
     if((gameBoard[x+1][c] != 0 || gameBoard[x+2][c+1] != 0 || gameBoard[x+2][c+2] != 0 || gameBoard[x+2][c+3] != 0) && rightPressed) {
       x = x-1;
     }
-
-  
-  
+  }
+  else if(rotateForm == 1) {
+    matrix.drawPixel(x, c, LED_ON);
+    matrix.drawPixel(x+1, c, LED_ON);
+    matrix.drawPixel(x+1, c+1, LED_ON);
+    matrix.drawPixel(x+2, c+1, LED_ON);
+    matrix.writeDisplay();
+    rightPressed = false;
+      leftPressed = false;
+      delay(pauseLength);
+ 
+    if(c == 15 || c+1 == 15) {
+       shouldBreak = true;
+       placeS(c);
+    }
+    else if(gameBoard[x][c+1] != 0 || gameBoard[x+1][c+2] != 0 || gameBoard[x+2][c+2] != 0){
+    if(reallyFinished == 3) {
+      shouldBreak = true;
+      reallyFinished = 0;
+      placeS(c);
+      }
+      
+      else if(reallyFinished < 3) {
+        reallyFinished += 1;
+        decrementCounter = true;
+      }
+  }
+    if((gameBoard[x-1][c] != 0 || gameBoard[x][c+1] != 0 || gameBoard[x-1][c+1] != 0) && leftPressed) {
+      x = x+1;
+    }
+    if((gameBoard[x+2][c] != 0 || gameBoard[x+2][c+1] != 0 || gameBoard[x+3][c-1] != 0 || gameBoard[x+3][c] != 0) && rightPressed) {
+      x = x-1;
+    }
+  } 
 }
 
 void placeS(int c) {
-  gameBoard[x][c] = 1;
-  gameBoard[x][c+1] = 1;
-  gameBoard[x+1][c+1] = 1;
-  gameBoard[x+1][c+2] = 1;
+  if(rotateForm == 0) {
+    gameBoard[x][c] = 1;
+    gameBoard[x][c+1] = 1;
+    gameBoard[x+1][c+1] = 1;
+    gameBoard[x+1][c+2] = 1;
+  }
+  else if(rotateForm == 1) {
+    gameBoard[x][c] = 1;
+    gameBoard[x+1][c] = 1;
+    gameBoard[x+1][c+1] = 1;
+    gameBoard[x+2][c+1] = 1;
+  }
 
 }
 
@@ -380,7 +834,6 @@ void playMusic() {
    // for playing the song
   if((millis() - noteTime) > noteLength) {
     noteTime = millis();
-    // Serial.println(noteTime);
     noteLength = fullBeat / pgm_read_float_near(song + cNote + 1); // song[cNote + 1];
     freq = pgm_read_float(song + cNote);
     noTone(SPEAKER_PIN);
