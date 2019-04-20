@@ -11,7 +11,7 @@
 float fullBeat = (1 / BPM) * 60 * 1000; // full length of a beat in milliseconds
 int cNote = 0;
 int noteLength = 0;
-int noteTime = 0;
+long long noteTime = 0;
 int freq;
 // end music stuff
 
@@ -25,7 +25,7 @@ const int pauseLength = 100;
 #define ROTATE_PIN 10
 #define DROP_PIN 11 
 
-volatile bool leftPressed = false;
+volatile bool leftPressed = false;  
 volatile bool rightPressed = false;
 volatile bool rotatePressed = false;
 volatile bool dropPressed = false;
@@ -67,7 +67,7 @@ void loop() {
   
   matrix.setRotation(0);
 
-  // playMusic();
+  playMusic();
 
   endGame();
 }
@@ -380,6 +380,7 @@ void playMusic() {
    // for playing the song
   if((millis() - noteTime) > noteLength) {
     noteTime = millis();
+    // Serial.println(noteTime);
     noteLength = fullBeat / pgm_read_float_near(song + cNote + 1); // song[cNote + 1];
     freq = pgm_read_float(song + cNote);
     noTone(SPEAKER_PIN);
