@@ -1,36 +1,35 @@
+/* Main program file for Mini Arduino Tetris. */
+
+// Libraries for controlling LED Matrix
 #include <Wire.h>
 #include <Adafruit_GFX.h>
 #include "Adafruit_LEDBackpack.h"
+
+// Library for enabling interrupts on more than 2 pins
 #include <EnableInterrupt.h>
 
-// music stuff
-#include "a_theme.h" // include the song
+// input/output pins. speaker is the piezo, and all others are the buttons
 #define SPEAKER_PIN 3
-
-
-float fullBeat = (1 / BPM) * 60 * 1000; // full length of a beat in milliseconds
-int cNote = 0;
-int noteLength = 0;
-long long noteTime = 0;
-int freq;
-// end music stuff
-
-
-bool shouldBreak;
-Adafruit_8x16matrix matrix = Adafruit_8x16matrix();
-int gameBoard[8][16]={0};
-int pauseLength = 100;
-int rotateForm = 0;
-
 #define LEFT_PIN 8
 #define RIGHT_PIN  9
 #define ROTATE_PIN 13
 #define DROP_PIN 11 
 
-volatile bool leftPressed = false;
-volatile bool rightPressed = false;
-volatile bool rotatePressed = false;
-volatile bool dropPressed = false;
+// Header file with data for the song to be played
+#include "a_theme.h" // include the song
+// various variables for playing the song
+float fullBeat = (1 / BPM) * 60 * 1000; // full length of a beat in milliseconds
+int cNote = 0;
+int noteLength = 0;
+long long noteTime = 0;
+int freq;
+
+// various variables to store game data
+bool shouldBreak;
+Adafruit_8x16matrix matrix = Adafruit_8x16matrix();
+int gameBoard[8][16]={0};
+int pauseLength = 100;
+int rotateForm = 0;
 
 int pieceWidth = 0;
 int x = 4;
@@ -38,9 +37,16 @@ int reallyFinished = 0;
 bool decrementCounter;
 
 
+// bools to store the state of button input
+volatile bool leftPressed = false;
+volatile bool rightPressed = false;
+volatile bool rotatePressed = false;
+volatile bool dropPressed = false;
 
 void setup() {
-  Serial.begin(9600);
+  /* Begin the serial monitor for debugging purposes, seeds the random number generator, sets up the matrix,
+   * and assigns ISRs for each button. 
+   */
   randomSeed(analogRead(A0));
   matrix.setBrightness(15);
   matrix.begin(0x70);  // pass in the address
@@ -48,22 +54,14 @@ void setup() {
   enableInterrupt(RIGHT_PIN, rightButtonClicked, RISING);
   enableInterrupt(ROTATE_PIN, rotateButtonClicked, RISING);
   enableInterrupt(DROP_PIN, dropButtonClicked, RISING);
-
-  // for testing
-  /*
-  gameBoard[0][15] = 1;
-  gameBoard[1][15] = 1;
-  gameBoard[2][15] = 1;
-  gameBoard[3][15] = 1;
-  gameBoard[4][15] = 1;
-  gameBoard[6][15] = 1;
-  gameBoard[7][15] = 1;
-  */
 }
 
 static const uint8_t PROGMEM;
   
 void loop() {
+  /* Resets delay length for falling pieces, clears any filled rows, drops the next Tetris piece,
+   * and checks if the game should be reset.
+   */
   
   pauseLength = 100;
 
@@ -71,14 +69,16 @@ void loop() {
 
   dropPiece();
   
-  matrix.setRotation(0);
-
-  // playMusic();
-
   endGame();
+
+  matrix.setRotation(0);
 }
 
 void clearRows() {
+  /* Each row is checked for whether it contains block. If the row is full, it is cleared and all
+   * pieces below the row are shifted down. 
+   */
+
   bool cleared = true;
   int rowsCleared = 0;
   for(int jj = 0; jj <= 15; jj++)  {
@@ -105,6 +105,22 @@ void clearRows() {
 
 
 void dropPiece() {
+  /* First resets the horizontal position of the dropped piece to the middle of the board,
+   * resets the value for whether the piece has been placed to false, and generates a new 
+   * number between 0 and 4 randomly to select the next piece. The function then enters into 
+   * a loop with drops the selected piece 16 spaces until it reaches the bottom of the board. 
+   * For every iteration of the loop, the matrix is cleared and the spots corresponding to placed 
+   * pieces are filled in.  The function then checks for valid right and left movement of the piece 
+   * based on the buttons being pressed and the current position of the piece. The piece is then 
+   * drawn one space below the last iteration according to its current type, left and right movement 
+   * since the last iteration and current rotation. This breaks into a switch case where either 
+   * drawElbow(c), drawStraight(c), drawT(c), drawBlock(c), or drawS(c) is called depending on the 
+   * randomly generated number. Finally, the function  checks whether it should move the piece down 
+   * one based on the decrementCounter logical variable which is set to true when the piece has blocks
+   * directly underneath it. The function repeats until the piece has been successfully placed 
+   * (either when the piece reaches the bottom of the board or is sitting on top of another piece). 
+   * The playMusic() function is also executed here.
+  */
   x=4;
   shouldBreak = false;
   int pieceSelection = random(5);
@@ -175,6 +191,9 @@ void dropPiece() {
   }   
 
 void endGame() {
+  /*
+   * Checks if the board is filled to the top row, and if so resets the matrix for the next game by resetting all values in the gameBoard matrix to 0.
+   */
   bool finished = false;
   for(int t = 0; t <= 7; t++) {
     if(gameBoard[t][0] == 1)
@@ -190,6 +209,24 @@ void endGame() {
 }
 
 void drawElbow(int c) {
+  /*
+   * draws a small elbow shaped piece. First checks for the rotation state of the piece based 
+   * on whether the rotation button is pressed and whether the rotation would clip into any 
+   * existing blocks. The function then draws the piece onto the board according to the value of c 
+   * (the iteration of the for loop corresponding to the height of the piece on the board), 
+   * x (the current horizontal coordinate depending on how the user has pressed the left and right movement buttons), 
+   * and the rotation state. Each possibility corresponds to a uniquely defined set of coordinates 
+   * which are drawn onto the matrix using the matrix.drawPixel() function imported from the Adafruit 
+   * libraries meant for use with the LED matrix.  The elbow piece is three blocks and has four possible 
+   * orientations. After drawing the piece, the function resets the values of the logical variables 
+   * associated with the left and right movement buttons and delays the program a number of milliseconds
+   * equal to the pauseLength variable. The function then checks if the block is either a) at the bottom 
+   * of the board or b) on top of another piece. In either case, the function stops the piece from being 
+   * moved downward for a short grace period before the piece is committed to the board and cannot be moved anymore. 
+   * After the grace period, if the piece is still in a position to be placed, the placeElbow() function is executed. 
+   * After the checks, the function performs horizontal collision detection to prevent the piece from 
+   * being moved left or right if there are blocks to the immediate left or right of the current location of the piece. 
+   */
   pieceWidth = 2;
 
   if(rotatePressed) {
@@ -352,6 +389,12 @@ void drawElbow(int c) {
 }
 
 void placeElbow(int c) {
+  /*
+   * The piece is committed to the board, its current coordinates are changed from 0 to 1 
+   * on the gameBoard matrix. At the beginning of each iteration of the loop in dropPiece, 
+   * all values equal to 1 on the gameBoard matrix will be filled in. These spaces will 
+   * remain filled until either a row is cleared or the game resets.
+   */
   if(rotateForm == 0) {
     gameBoard[x][c] = 1;
     gameBoard[x+1][c] = 1;
@@ -376,6 +419,11 @@ void placeElbow(int c) {
 }
 
 void drawStraight(int c) {
+  /*
+   *  performs the equivalent function of the drawElbow(c) function but for the sets of 
+   *  coordinates respective to the possible orientations of the straight piece. 
+   *  The straight piece has 2 possible rotations and is 3 blocks long.
+   */
 
     if(rotatePressed) {
         if(rotateForm == 0 && (gameBoard[x][c+1] == 0 && gameBoard[x][c+2] == 0)) {
@@ -468,6 +516,11 @@ void drawStraight(int c) {
 }
 
 void placeStraight(int c) {
+  /*
+   *  performs the equivalent function of the placeElbow(c) function but 
+   *  for the sets of coordinates respective to the possible orientations 
+   *  of the straight piece.
+   */
   if(rotateForm == 0) {
     gameBoard[x][c] = 1;
     gameBoard[x+1][c] = 1;
@@ -482,6 +535,11 @@ void placeStraight(int c) {
 }
 
 void drawT(int c) {
+  /*
+   *  performs the equivalent function of the drawElbow() function
+   *  but for the sets of coordinates respective to the possible orientations 
+   *  of the T piece. The T piece is four blocks and has four possible orientations.
+   */
 
   if(rotatePressed) {
     if(rotateForm == 0 && (gameBoard[x][c] == 0 && gameBoard[x][c+1] == 0 && gameBoard[x][c+2] == 0 && gameBoard[x+1][c+1] == 0)) {
@@ -643,6 +701,9 @@ void drawT(int c) {
 }
 
 void placeT(int c) {
+  /* performs the equivalent function of the placeElbow(c) function but for the sets of coordinates 
+   * respective to the possible orientations of the T piece.
+  */
 
   if(rotateForm == 0) {
     gameBoard[x][c] = 1;
@@ -671,6 +732,11 @@ void placeT(int c) {
 }
 
 void drawBlock(int c) {
+  /*
+   * performs the equivalent function of the drawElbow(c) function but for the sets of coordinates 
+   * respective to the possible orientations of the block piece. The block piece is four blocks 
+   * and has one possible orientation.
+   */
   
     matrix.drawPixel(x, c, LED_ON);
     matrix.drawPixel(x+1, c, LED_ON);
@@ -708,6 +774,10 @@ void drawBlock(int c) {
 }
 
   void placeBlock(int c) {
+    /*
+     * performs the equivalent function of the placeElbow(c) function but for the sets of
+     * coordinates respective to the possible orientations of the block piece.
+     */
     gameBoard[x][c] = 1;
     gameBoard[x+1][c] = 1;
     gameBoard[x][c+1] = 1;
@@ -716,6 +786,11 @@ void drawBlock(int c) {
   }
 
 void drawS(int c) {
+  /*
+   * performs the equivalent function of the drawElbow(c) function but for the sets of
+   * coordinates respective to the possible orientations of the S piece. 
+   * The S piece is four blocks and has two possible orientations.
+   */
   
   if(rotatePressed) {
   if(rotateForm == 0 && (gameBoard[x+1][c] == 0 && gameBoard[x+2][c+1] == 0))
@@ -805,6 +880,10 @@ void drawS(int c) {
 }
 
 void placeS(int c) {
+  /*
+   * performs the equivalent function of the placeElbow(c) function but for the sets of coordinates
+   * respective to the possible orientations of the S piece.
+   */
   if(rotateForm == 0) {
     gameBoard[x][c] = 1;
     gameBoard[x][c+1] = 1;
@@ -821,25 +900,32 @@ void placeS(int c) {
 }
 
 void leftButtonClicked() {
+  /* The ISR of the button which sets the logical variable leftPressed equal to true. */
   leftPressed = true;
 }
 
 void rightButtonClicked() {
+  /* The ISR of the button which sets the logical variable rightPressed equal to true. */
   rightPressed = true;
 }
 
 void rotateButtonClicked() {
+  /* The ISR of the button which sets the logical variable rotatePressed equal to true. */
   rotatePressed = true;
 }
 
 void dropButtonClicked() {
+  /* The ISR of the button which sets the logical variable dropPressed equal to true. */
   dropPressed = true;
 }
 
 void playMusic() {
-   // for playing the song
+  /* The function responsible for executing the playback of the music accompanying the game.
+   * The function handles the tempo, length, and looping of notes played. 
+   * Each time the function is called, it checks whether the current note of the music being played is over,
+   * and if so, reads the next note from program memory and plays the tone.
+   */
   if((millis() - noteTime) > noteLength) {
-    Serial.println(noteLength);
     noteTime = millis();
     noteLength = fullBeat / pgm_read_float_near(song + cNote + 1); // song[cNote + 1];
     freq = pgm_read_float(song + cNote);

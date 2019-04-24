@@ -1,5 +1,5 @@
 #include "pitches.h"
-/* Merry Christmas, Mr. Lawrence. Because I feel like crying. */
+/* Merry Christmas, Mr. Lawrence, by Ryuichi Sakamoto. */
 const float song[] PROGMEM {
   NOTE_F5, 8, NOTE_DS5, 8, NOTE_F5, 8, NOTE_AS5, 8, NOTE_F5, 8, NOTE_DS5, 8, 
   NOTE_F5, 8, NOTE_DS5, 8, NOTE_F5, 8, NOTE_AS5, 8, NOTE_F5, 8, NOTE_DS5, 8, 
