@@ -5,7 +5,7 @@
 
 // music stuff
 #include "a_theme.h" // include the song
-#define SPEAKER_PIN 12
+#define SPEAKER_PIN 3
 
 
 float fullBeat = (1 / BPM) * 60 * 1000; // full length of a beat in milliseconds
@@ -24,7 +24,7 @@ int rotateForm = 0;
 
 #define LEFT_PIN 8
 #define RIGHT_PIN  9
-#define ROTATE_PIN 10
+#define ROTATE_PIN 13
 #define DROP_PIN 11 
 
 volatile bool leftPressed = false;
@@ -149,15 +149,12 @@ void dropPiece() {
       switch(pieceSelection) {
         case 0 :
           drawElbow(c);
-          pieceWidth = 2;
           break;
         case 1 :
           drawStraight(c);
-          pieceWidth = 3;
           break;
         case 2 :
           drawT(c);
-          pieceWidth = 3;
           break;
         case 3 :
           drawBlock(c);
@@ -165,7 +162,6 @@ void dropPiece() {
           break;
         case 4 :
           drawS(c);
-          pieceWidth = 2;
           break;
       }
       if(decrementCounter) {
@@ -194,6 +190,7 @@ void endGame() {
 }
 
 void drawElbow(int c) {
+  pieceWidth = 2;
 
   if(rotatePressed) {
      if(rotateForm == 0 && (gameBoard[x+1][c] == 0 && gameBoard[x][c+1] == 0)) {
@@ -221,12 +218,13 @@ void drawElbow(int c) {
   }
 
   if(rotateForm == 0) {
+    
     matrix.drawPixel(x, c, LED_ON);
     matrix.drawPixel(x+1, c, LED_ON);
     matrix.drawPixel(x+1, c+1, LED_ON);
     matrix.writeDisplay();
     rightPressed = false;
-      leftPressed = false;
+    leftPressed = false;
       delay(pauseLength);
     if(c >= 14) {
       shouldBreak = true;
@@ -399,6 +397,7 @@ void drawStraight(int c) {
     }
 
   if(rotateForm == 0) {
+    pieceWidth = 3;
     matrix.drawPixel(x, c, LED_ON);
     matrix.drawPixel(x+1, c, LED_ON);
     matrix.drawPixel(x+2, c, LED_ON);
@@ -432,6 +431,7 @@ void drawStraight(int c) {
     }
   }
   else if(rotateForm == 1) {
+    pieceWidth = 1;
     matrix.drawPixel(x, c, LED_ON);
     matrix.drawPixel(x, c+1, LED_ON);
     matrix.drawPixel(x, c+2, LED_ON);
@@ -509,6 +509,7 @@ void drawT(int c) {
     rotateForm = 0;
   }
   if(rotateForm == 0) {
+    pieceWidth = 3;
     matrix.drawPixel(x, c, LED_ON);
     matrix.drawPixel(x+1, c, LED_ON);
     matrix.drawPixel(x+2, c, LED_ON);
@@ -541,6 +542,7 @@ void drawT(int c) {
   }  
   }
   if(rotateForm == 1) {
+      pieceWidth = 2;
       matrix.drawPixel(x, c, LED_ON);
       matrix.drawPixel(x, c+1, LED_ON);
       matrix.drawPixel(x+1, c+1, LED_ON);
@@ -573,6 +575,7 @@ void drawT(int c) {
     }  
   }
   else if(rotateForm == 2) {
+      pieceWidth = 3;
       matrix.drawPixel(x, c, LED_ON);
       matrix.drawPixel(x, c+1, LED_ON);
       matrix.drawPixel(x+1, c+1, LED_ON);
@@ -605,6 +608,7 @@ void drawT(int c) {
     }  
   }
   else if(rotateForm == 3) {
+      pieceWidth = 2;
       matrix.drawPixel(x, c, LED_ON);
       matrix.drawPixel(x, c+1, LED_ON);
       matrix.drawPixel(x-1, c+1, LED_ON);
@@ -731,6 +735,7 @@ void drawS(int c) {
   }
 
   if(rotateForm == 0) {
+    pieceWidth = 2;
     matrix.drawPixel(x, c, LED_ON);
     matrix.drawPixel(x, c+1, LED_ON);
     matrix.drawPixel(x+1, c+1, LED_ON);
@@ -764,6 +769,7 @@ void drawS(int c) {
     }
   }
   else if(rotateForm == 1) {
+    pieceWidth = 3;
     matrix.drawPixel(x, c, LED_ON);
     matrix.drawPixel(x+1, c, LED_ON);
     matrix.drawPixel(x+1, c+1, LED_ON);
@@ -833,6 +839,7 @@ void dropButtonClicked() {
 void playMusic() {
    // for playing the song
   if((millis() - noteTime) > noteLength) {
+    Serial.println(noteLength);
     noteTime = millis();
     noteLength = fullBeat / pgm_read_float_near(song + cNote + 1); // song[cNote + 1];
     freq = pgm_read_float(song + cNote);
