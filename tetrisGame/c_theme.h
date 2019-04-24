@@ -39,5 +39,5 @@ const float song[] PROGMEM = { // six notes per measure for the first part, whic
   NOTE_A5, 4, NOTE_B5, 8, NOTE_A5, 8, NOTE_GS5, 8, NOTE_A5, 8,
   NOTE_FS5, 16, NOTE_GS5, 16, NOTE_FS5, 16, NOTE_GS5, 16, NOTE_FS5, 16, NOTE_GS5, 16, NOTE_FS5, 16, NOTE_GS5, 16, REST, 4
 };
-#define NOTES 190 // should adjust this if it's incorrect
+#define NOTES 161 // should adjust this if it's incorrect
 #define BPM 40.0
