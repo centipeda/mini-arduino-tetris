@@ -793,7 +793,7 @@ void drawS(int c) {
    */
   
   if(rotatePressed) {
-  if(rotateForm == 0 && (gameBoard[x+1][c] == 0 && gameBoard[x+2][c+1] == 0))
+  if(rotateForm == 0 && (gameBoard[x+1][c] == 0 && gameBoard[x+2][c+1] == 0)) {
     rotateForm += 1;
     rotatePressed = false;
   }
@@ -804,6 +804,7 @@ void drawS(int c) {
   else {
     rotatePressed = false;
   }
+ }
 
   if(rotateForm == 2) {
     rotateForm = 0;
